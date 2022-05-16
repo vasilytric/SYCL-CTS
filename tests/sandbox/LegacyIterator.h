@@ -1,6 +1,5 @@
 // FIXME remove pragma after moving to cts
-#pragma once 
-
+#pragma once
 
 #include "../common/common.h"
 
@@ -13,38 +12,65 @@
 #include <vector>
 
 template <typename It>
-constexpr bool check_legacy_iterator_requirement(It valid_iterator) {
-  static_assert(!std::is_same_v<It, void>);
+void check_legacy_iterator_requirement(It valid_iterator,
+                                       const size_t size_of_container,
+                                       const std::string& type_name) {
+  INFO("Verify named requiremnt Legacy Iterator: " + type_name);
 
-  bool result = false;
+  STATIC_CHECK(!std::is_same_v<It, void>);
 
-  bool is_copy_constructible = std::is_copy_constructible_v<It>;
-  bool is_copy_assignable = std::is_copy_assignable_v<It>;
-  bool is_destructible = std::is_destructible_v<It>;
-  bool is_swappable = std::is_swappable_v<It>;
+  if (size_of_container < 2) {
+    INFO("Container, that iterator belongs to, have to be at least size of 2");
+    CHECK(false);
+    return;
+  }
 
-  result = is_copy_constructible;
-  result &= is_copy_assignable;
-  result &= is_destructible;
-  result &= is_swappable;
+  {
+    INFO("Iterator have to be copy constructble");
+    CHECK(std::is_copy_constructible_v<It>);
+  }
+  {
+    INFO("Iterator have to be copy assignble");
+    CHECK(std::is_copy_assignable_v<It>);
+  }
+  {
+    INFO("Iterator have to be destrcutble");
+    CHECK(std::is_destructible_v<It>);
+  }
+  {
+    INFO("Iterator have to be swappable");
+    CHECK(std::is_swappable_v<It>);
+  }
 
-  // Expect to fail a compilation if iterator has no member typedefs (?)
-  using iter_tr = std::iterator_traits<std::remove_reference_t<It>>;
-  typename iter_tr::value_type value_type;
-  typename iter_tr::difference_type difference_type;
-  // typename iter_tr::reference reference; // 'reference' declared as
-  // reference but not initialized
-  typename iter_tr::pointer pointer;
+  {
+    INFO("Iterator have to have value_type member typedef");
+    CHECK(type_traits::has_value_type_field_v<It>);
+  }
+  {
+    INFO("Iterator have to have difference_type member typedef");
+    CHECK(type_traits::has_difference_type_field_v<It>);
+  }
+  {
+    INFO("Iterator have to have reference member typedef");
+    CHECK(type_traits::has_reference_field_v<It>);
+  }
+  {
+    INFO("Iterator have to have pointer member typedef");
+    CHECK(type_traits::has_pointer_field_v<It>);
+  }
 
-  It lval = valid_iterator;
-  // Expect to fail a compilation if iterator has no increment operator
-  bool incrementable_lval = std::is_same_v<decltype(++lval), It&>;
-  //   bool incrementable_rval = std::is_same_v<++(std::declval<It>()), It&>;
-  result &= incrementable_lval;
-  //   result &= incrementable_rval;
+  {
+    INFO("Iterator have to implement prefix increment operator");
+    CHECK(type_traits::can_pre_increment_v<It>);
+    if constexpr (type_traits::can_pre_increment_v<It>) {
+      INFO("Have to be return reference after using prefix increment operator");
+      It lval = valid_iterator;
+      CHECK(std::is_same_v<decltype(++lval), It&>);
+    }
+  }
 
-  bool is_dereferenceable = type_traits::is_dereferenceable_v<It>;
-  result &= is_dereferenceable;
-
-  return result;
+  {
+    INFO("Iterator have to be dereferenceble");
+    CHECK(type_traits::is_dereferenceable_v<It>);
+  }
 }

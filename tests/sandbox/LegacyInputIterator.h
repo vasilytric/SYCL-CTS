@@ -12,83 +12,103 @@
 #include <vector>
 
 template <typename It>
-bool check_legacy_input_iterator_requirement(It valid_iterator) {
-  using reference_t = typename std::iterator_traits<It>::reference;
-  using value_t = typename std::iterator_traits<It>::value_type;
+void check_legacy_input_iterator_requirement(It valid_iterator,
+                                             const size_t size_of_container,
+                                             const std::string& type_name) {
+  INFO("Verify named requiremnt Legacy Input Iterator for: " + type_name);
+  STATIC_CHECK(!std::is_same_v<It, void>);
 
-  static_assert(!std::is_same_v<It, void>);
+  if (size_of_container < 2) {
+    INFO("Container, that iterator belongs to, have to be at least size of 2");
+    CHECK(false);
+    return;
+  }
 
-  bool result = false;
-
-  bool is_legacy_iterator = check_legacy_iterator_requirement(valid_iterator);
-  bool is_equality_comparable =
-      check_equality_comparable_requirement(valid_iterator);
-
-  // static_assert(is_legacy_iterator);
-  // static_assert(is_equality_comparable)
-
-  result = is_legacy_iterator;
-  result &= is_equality_comparable;
+  check_legacy_iterator_requirement(valid_iterator, size_of_container,
+                                    type_name);
+  check_equality_comparable_requirement(valid_iterator, type_name);
 
   {
+    INFO("Iterator have to be dereferenceable");
+    CHECK(type_traits::is_dereferenceable_v<It>);
+  }
+  {
+    INFO("Iterator have to implement prefix and postfix increment operator");
+    CHECK(type_traits::can_pre_increment_v<It>);
+    CHECK(type_traits::can_post_increment_v<It>);
+  }
+  {
+    INFO(
+        "Iterator have to implement std::iterator_traits<It>::reference and "
+        "std::iterator_traits<It>::value_type");
+    CHECK(type_traits::has_reference_field_v<It>);
+    CHECK(type_traits::has_value_type_field_v<It>);
+  }
+
+  constexpr bool precondition = type_traits::is_dereferenceable_v<It> &&
+                                type_traits::can_pre_increment_v<It> &&
+                                type_traits::can_post_increment_v<It> &&
+                                type_traits::has_reference_field_v<It> &&
+                                type_traits::has_value_type_field_v<It>;
+
+  if constexpr (precondition) {
+    using reference_t = typename std::iterator_traits<It>::reference;
+    using value_t = typename std::iterator_traits<It>::value_type;
+
     It j = valid_iterator;
     It i = valid_iterator;
 
-    // As Legacy Iterator implements increment operator we can get two not equal
-    // iterators
+    // As "Legacy Iterator" implements increment operator we can get two not
+    // equal iterators
     i = ++i;
+    {
+      INFO(
+          "Two not equal iterators have to return true with NOT EQUAL "
+          "operator");
+      CHECK(i != j);
+      CHECK(!(i == j));
+    }
+    {
+      INFO(
+          "Two not equal iterators have to return implicit convertble to "
+          "bool value with NOT EQUAL operator");
+      CHECK(std::is_convertible_v<decltype((i != j)), bool>);
+      CHECK(std::is_convertible_v<decltype((i == j)), bool>);
+    }
+    {
+      It i = valid_iterator;
+      It j = i;
+      {
+        INFO(
+            "Iterator have to return reference when called dereference "
+            "operator");
+        CHECK(std::is_same_v<decltype(*i), reference_t>);
 
-    bool i_not_equal_j = (i != j);
-    bool returns_bool = std::is_same_v<decltype((i != j)), bool>;
+        // If i == j and (i, j) is in the domain of == then this is equivalent
+        // to *j
+        CHECK(std::is_same_v<decltype(*j), reference_t>);
+      }
+      {
+        INFO(
+            "Iterator dereference result have to be convertble to "
+            "value_type");
+        CHECK(std::is_convertible_v<decltype(*i), value_t>);
+      }
+    }
 
-    i_not_equal_j &= !(i == j);
-    returns_bool &= std::is_same_v<decltype((i == j)), bool>;
+    {
+      It i = valid_iterator;
+      INFO(
+          "Iterator have to return reference after usage of prefix increment "
+          "operator");
+      CHECK(std::is_same_v<decltype(++i), It&>);
+    }
 
-    result &= i_not_equal_j;
-    result &= returns_bool;
+    {
+      INFO("Iterator expression *i++ have to be convertble to value_type");
+      CHECK(
+          std::is_convertible_v<decltype(*i++),
+                                typename std::iterator_traits<It>::value_type>);
+    }
   }
-
-  // check precondition
-  if (type_traits::is_dereferenceable_v<It>) {
-    It i = valid_iterator;
-    It j = i;
-    bool returns_reference = std::is_same_v<decltype(*i), reference_t>;
-
-    // If i == j and (i, j) is in the domain of == then this is equivalent to *j
-    returns_reference &= std::is_same_v<decltype(*j), reference_t>;
-
-    // Expect to fail a compilation if not convertible
-    value_t x = *i;
-
-    result &= returns_reference;
-  }
-
-  if (type_traits::is_dereferenceable_v<It>) {
-    // Can't check "iterator->m" or can I ???
-  }
-
-  if (type_traits::is_dereferenceable_v<It>) {
-    It i = valid_iterator;
-
-    bool returns_reference = std::is_same_v<decltype((++i)), It&>;
-
-    result &= returns_reference;
-  }
-
-  {
-    It i = valid_iterator;
-
-    // Expect to fail a compilation if not convertible
-    (void)i++;
-    (void)++i;
-  }
-
-  {
-    It i = valid_iterator;
-    // Expect to fail a compilation if not convertible
-    value_t x = *i;
-    ++i;
-  }
-
-  return result;
 }
