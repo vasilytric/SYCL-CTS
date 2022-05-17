@@ -41,24 +41,22 @@ void check_legacy_iterator_requirement(It valid_iterator,
     INFO("Iterator have to be swappable");
     CHECK(std::is_swappable_v<It>);
   }
-
   {
-    INFO("Iterator have to have value_type member typedef");
+    INFO("Iterator have to have value_type member");
     CHECK(type_traits::has_value_type_field_v<It>);
   }
   {
-    INFO("Iterator have to have difference_type member typedef");
+    INFO("Iterator have to have difference_type member");
     CHECK(type_traits::has_difference_type_field_v<It>);
   }
   {
-    INFO("Iterator have to have reference member typedef");
+    INFO("Iterator have to have reference member");
     CHECK(type_traits::has_reference_field_v<It>);
   }
   {
-    INFO("Iterator have to have pointer member typedef");
+    INFO("Iterator have to have pointer member");
     CHECK(type_traits::has_pointer_field_v<It>);
   }
-
   {
     INFO("Iterator have to implement prefix increment operator");
     CHECK(type_traits::can_pre_increment_v<It>);
@@ -68,7 +66,6 @@ void check_legacy_iterator_requirement(It valid_iterator,
       CHECK(std::is_same_v<decltype(++lval), It&>);
     }
   }
-
   {
     INFO("Iterator have to be dereferenceble");
     CHECK(type_traits::is_dereferenceable_v<It>);
