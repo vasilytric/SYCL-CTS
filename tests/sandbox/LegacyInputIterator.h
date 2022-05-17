@@ -1,26 +1,17 @@
 // FIXME remove pragma after moving to cts
 #pragma once
 
-#include "../common/common.h"
+#include "common.h"
 
 #include "EqualityComparable.h"
 #include "LegacyIterator.h"
-#include "TypeTraits.h"
-
-#include <type_traits>
-#include <utility>
-#include <vector>
 
 template <typename It>
 void check_legacy_input_iterator_requirement(It valid_iterator,
                                              const size_t size_of_container,
                                              const std::string& type_name) {
-  INFO("Verify named requiremnt Legacy Input Iterator for: " + type_name);
-  STATIC_CHECK(!std::is_same_v<It, void>);
-
-  if (size_of_container < 2) {
-    INFO("Container, that iterator belongs to, have to be at least size of 2");
-    CHECK(false);
+  if (!iterator_verification_common::check_preconditions(
+          valid_iterator, size_of_container, type_name)) {
     return;
   }
 
@@ -67,8 +58,8 @@ void check_legacy_input_iterator_requirement(It valid_iterator,
   {
     if constexpr (type_traits::can_pre_increment_v<It>) {
       INFO(
-        "Iterator have to implement prefix increment operator and its return "
-        "value type is equal to iterator::value_type&");
+          "Iterator have to implement prefix increment operator and its return "
+          "value type is equal to iterator::value_type&");
       CHECK(type_traits::pre_incr_ret_val<It>());
     } else {
       INFO(
