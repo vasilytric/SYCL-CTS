@@ -45,12 +45,23 @@ void check_legacy_iterator_requirement(It valid_iterator,
     CHECK(type_traits::has_pointer_field_v<It>);
   }
   {
+    INFO("Iterator have to have iterator_category member");
+    CHECK(type_traits::has_iterator_category_field_v<It>);
+  }
+  {
     INFO("Iterator have to implement prefix increment operator");
     CHECK(type_traits::can_pre_increment_v<It>);
+  }
+  {
+    INFO(
+        "Iterator have to implement prefix increment operator and its return "
+        "value is equal to expected one");
     if constexpr (type_traits::can_pre_increment_v<It>) {
-      INFO("Have to be return reference after using prefix increment operator");
-      It lval = valid_iterator;
-      CHECK(std::is_same_v<decltype(++lval), It&>);
+      CHECK(type_traits::pre_incr_ret_val<It>());
+    } else {
+      INFO(
+          "Iterator have not implemented prefix increment operator, so "
+          "verification for pre increent return value type has been skipped");
     }
   }
   {

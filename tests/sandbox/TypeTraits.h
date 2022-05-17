@@ -181,7 +181,7 @@ not_equal_convertible_to_bool() {
 }
 
 template <typename T>
-typename std::enable_if_t<can_pre_increment_v<T>, bool> pre_incr_ret_val() {
+typename std::enable_if_t<!can_pre_increment_v<T>, bool> pre_incr_ret_val() {
   return false;
 }
 
@@ -207,7 +207,11 @@ post_incr_ret_val() {
 }
 
 template <typename T>
-typename std::enable_if_t<!can_post_increment_v<T>, bool>
+typename std::enable_if_t<
+    !can_post_increment_v<T> &&
+        !std::is_convertible_v<decltype(*std::declval<T>()++),
+                               typename std::iterator_traits<T>::value_type>,
+    bool>
 dereferenced_post_incr_ret_val() {
   return false;
 }

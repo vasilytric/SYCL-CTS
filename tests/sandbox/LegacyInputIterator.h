@@ -29,7 +29,6 @@ void check_legacy_input_iterator_requirement(It valid_iterator,
     INFO(
         "Two not equal iterators have to return the same value with NOT EQUAL "
         "operator");
-    CHECK();
     CHECK((!(i == j)) == (i != j));
   }
   {
@@ -42,18 +41,13 @@ void check_legacy_input_iterator_requirement(It valid_iterator,
 
   {
     INFO("Iterator have to be copy comparable with another one");
-    CHECK(is_equality_comparable_v<It>);
+    CHECK(type_traits::is_equality_comparable_v<It>);
   }
   {
-    if constexpr (is_equality_comparable_v<It>) {
+    if constexpr (type_traits::is_equality_comparable_v<It>) {
       INFO("Iterator not equal operator could be convertible to bool");
-      CHECK(not_equal_convertible_to_bool<It>());
+      CHECK(type_traits::not_equal_convertible_to_bool<It>());
     }
-  }
-  else {
-    INFO(
-        "Iterator have not implemented not equal operator, so verification for "
-        "not equal return value type has been skipped");
   }
   {
     if constexpr (type_traits::can_pre_increment_v<It>) {
@@ -75,10 +69,12 @@ void check_legacy_input_iterator_requirement(It valid_iterator,
     INFO("Iterator have to implement postfix increment operator ");
     if constexpr (type_traits::can_post_increment_v<It> &&
                   type_traits::is_equality_comparable_v<It>) {
-      auto tmp_it = valid_iterator;
-      auto equivalent_value = *valid_iterator;
-      ++valid_iterator;
-      CHECK(*tmp_it++ == equivalent_value);
+      It j = valid_iterator;
+      It i = valid_iterator;
+
+      auto equivalent_value = *j;
+      ++j;
+      CHECK(std::is_convertible_v<decltype(*i++), decltype(equivalent_value)>);
     } else {
       INFO(
           "Iterator have not implemented prefix increment or equal comparable "
